@@ -1,6 +1,6 @@
 ﻿namespace AzureDevOpsWiki
 {
-    public class Subpage
+    public class SubPage
     {
         public string path { get; set; }
         public int order { get; set; }

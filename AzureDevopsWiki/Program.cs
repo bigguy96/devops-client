@@ -7,27 +7,42 @@ using System.Threading.Tasks;
 
 namespace AzureDevOpsWiki
 {
-    class Program
+    internal class Program
     {
-        private const string Token = "token";
-        private const string BaseUri = "url";
-        private static readonly HttpClient Client = new HttpClient { BaseAddress = new Uri(BaseUri) };
+        private const string Token = "";
+        private const string BaseUri = "";
+        private static readonly HttpClient Client = new HttpClient();
 
-
-        static async Task Main(string[] args)
+        private static async Task Main()
         {
-
+            var sb = new StringBuilder("");
             var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($":{Token}"));
             Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
 
-            var getResult = await Client.GetAsync(BaseUri);
-            var etag = getResult.Headers.GetValues("ETag");
-            var response = await getResult.Content.ReadAsStringAsync();
-            var json = JsonSerializer.Deserialize<WikiDetails>(response);
+            var wikiDetails = await WikiDetails("/Documentation");
 
-            Console.WriteLine(json.content);
+            foreach (var subPage in wikiDetails.subPages)
+            {
+                var subPages = await WikiDetails(subPage.path);
+
+                foreach (var details in subPages.subPages)
+                {
+                    var detailsPages = await WikiDetails(details.path);
+                    sb.AppendLine(detailsPages.content);
+                }
+            }
+
+            Console.WriteLine(sb.ToString());
             Console.ReadLine();
+        }
+
+        private static async Task<WikiDetails> WikiDetails(string path)
+        {
+            var getResult = await Client.GetAsync(string.Format(BaseUri, path));
+            var response = await getResult.Content.ReadAsStringAsync();
+            var wikiDetails = JsonSerializer.Deserialize<WikiDetails>(response);
+            return wikiDetails;
         }
     }
 }
